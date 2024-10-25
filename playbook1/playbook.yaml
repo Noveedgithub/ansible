@@ -1,0 +1,102 @@
+- name: tasks targetting hosts A and B
+  hosts: virtualmachines
+  tasks:
+  - name: install wget on both machines
+    become: on
+    apt:
+      name: wget
+      state: present
+  - name: install unzip on host A
+    become: on
+    apt:
+      name: unzip
+      state: present
+    when: ansible_host == "13.43.217.209"
+  - name: install nginx on host b
+    become: on
+    apt:
+      name: nginx
+      state: present
+      update_cache: on
+    when: ansible_host == "3.8.39.74"
+  - name: uninstall unzip
+    become: on
+    apt:
+      name: unzip
+      state: absent
+  - name: install nginx on host A
+    become: on
+    apt:
+      name: nginx
+      state: present
+      update_cache: on
+    register: nginx_install
+    when: ansible_host == "13.43.217.209"
+  - name: Updating Index.html on Host A
+    become: on
+    copy:
+      src: index.nginx-debian.html
+      dest: /var/www/html/index.nginx-debian.html
+    when: ansible_host == "13.43.217.209"  
+  - name: Restarting nginx
+    become: on
+    service:
+      name: nginx
+      state: restarted
+    when: ansible_host == "13.43.217.209"
+  - name: Printing JSON object
+    debug:
+      var: nginx_install
+      verbosity: 1
+  - name: Prerequisites for Docker repo
+    become: on
+    apt:
+      name:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - software-properties-common
+      state: latest
+      update_cache: true
+  - name: Add docker GPG key
+    become: on
+    apt_key:
+      url: https://download.docker.com/linux/ubuntu/gpg
+  - name: Add docker repo
+    become: on
+    apt_repository:
+      repo: deb https://download.docker.com/linux/ubuntu focal stable
+  - name: install docker CE
+    become: on
+    apt:
+      name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      update_cache: yes
+  - name: Install prerequisites for docker-compose
+    become: on
+    apt:
+        name:
+          - python3-pip
+          - python3-setuptools
+          - virtualenv
+
+  - name: Install docker-compose
+    become: on
+    apt:
+        name: docker-compose
+        state: present
+
+  - name: Ensure Docker is started
+    service:
+        name: docker
+        state: started
+
+- name: setup vm02
+  hosts: vm02
+  become: yes
+  tasks:
+    - name: Install Docker on vm02
+      shell: curl https://get.docker.com | sudo bash
+ 

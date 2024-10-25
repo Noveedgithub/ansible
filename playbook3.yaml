@@ -1,0 +1,6 @@
+- name: run role on ec2
+  hosts: ec2
+  become: yes
+  roles:
+    - new-role
+  
